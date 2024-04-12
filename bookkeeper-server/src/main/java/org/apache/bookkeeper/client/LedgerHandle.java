@@ -2175,14 +2175,27 @@ public class LedgerHandle implements WriteHandle {
             if (changingEnsemble) {
                 delayedWriteFailedBookies.putAll(failedBookies);
             } else {
-                changingEnsemble = true;
-                triggerLoop = true;
-
                 toReplace = new HashMap<>(delayedWriteFailedBookies);
                 delayedWriteFailedBookies.clear();
                 toReplace.putAll(failedBookies);
 
                 origEnsemble = getCurrentEnsemble();
+
+                for (Map.Entry<Integer, BookieId> entry : toReplace.entrySet()) {
+                    Integer bookieIndex = entry.getKey();
+                    BookieId addr = entry.getValue();
+                    if (origEnsemble.get(bookieIndex).equals(addr)) {
+                        changingEnsemble = true;
+                        triggerLoop = true;
+                        break;
+                    }
+                }
+
+                if (!triggerLoop) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("No need to triggerLoop as all failed bookies are not in current ensemble, failedBookies:{}", toReplace);
+                    }
+                }
             }
         }
         if (triggerLoop) {
