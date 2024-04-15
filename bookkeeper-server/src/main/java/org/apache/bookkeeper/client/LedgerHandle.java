@@ -2211,10 +2211,13 @@ public class LedgerHandle implements WriteHandle {
         new MetadataUpdateLoop(
                 clientCtx.getLedgerManager(), getId(),
                 this::getVersionedLedgerMetadata,
-                (metadata) -> metadata.getState() == LedgerMetadata.State.OPEN
-                        && failedBookies.entrySet().stream().anyMatch(
-                                e -> LedgerMetadataUtils.getLastEnsembleValue(metadata)
-                                             .get(e.getKey()).equals(e.getValue())),
+                (metadata) -> {
+                    LedgerHandleFaultInjector.getInstance().sleepWhenTest();
+                    return metadata.getState() == LedgerMetadata.State.OPEN
+                            && failedBookies.entrySet().stream().anyMatch(
+                            e -> LedgerMetadataUtils.getLastEnsembleValue(metadata)
+                                    .get(e.getKey()).equals(e.getValue()));
+                },
                 (metadata) -> {
                     attempts.incrementAndGet();
 
